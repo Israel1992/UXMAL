@@ -1,0 +1,145 @@
+package uxmal;
+
+import java_cup.runtime.*;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+
+action code {:
+    ArrayList<Instruccion> instrucciones = new ArrayList();
+:}
+
+parser code {:
+
+    //esta es la manera en que se puede acceder a un objeto que se genera durante la etapa del parsing
+    public ArrayList<Instruccion> getInstrucciones(){
+        return action_obj.instrucciones;
+    }
+    
+    @Override
+    public void syntax_error(Symbol sy) {
+        int tamaño=AnalizadorLexico.simbolos.size();
+         try{
+           if(AnalizadorLexico.simbolos.size()==0){
+                principal.Uxmal.AreaDeTexto.setText("\"No ahy codigo escrito\"");       
+            }else if(sy.value==null){
+               principal.Uxmal.AreaDeTexto.setText("Error: [ Fila-> "+(((Integer)AnalizadorLexico.simbolos.get(tamaño-1).getRow())+1)+" : Columna-> "+0+"] \n"
+                       +AnalizadorLexico.simbolos.get(tamaño-1).getMensaje()); 
+            }else{
+                token t=(token)sy.value;
+                principal.Uxmal.AreaDeTexto.setText("Error: "+"[ Fila-> "+t.getRow()+" : Columna->"+t.getCol()+"]"
+                        +"\n"+t.getMensaje()); 
+            }
+        }catch(Exception ex){
+              principal.Uxmal.AreaDeTexto.setText("Error Inesperado: \n"+ex);       
+        }
+    }
+:}
+
+
+/*---------------------------------TERMINALES------------------------------*/
+
+terminal COMA,PUNTO,PCOMA,ABRIRPAR,CERRARPAR,INICIO,FIN,ABRIRLLA,CERRARLLA,COMILLASDOBL,TITULO,DATOS,AGREGAR,ENTER;
+terminal GRAFICA_PASTEL,GRAFICA_BARRAS3D,GRAFICA_PASTEL3D,GRAFICA_LINEAL;
+terminal token VALINT;
+terminal token VALSTR;
+
+/*-------------------------------NO TERMINALES----------------------------*/
+
+non terminal instrucciones, programa;
+non terminal titulo_pastel, titulo_barras3d, titulo_pastel3d, titulo_lineal;
+non terminal dato_pastel, dato_barras3d,  dato_pastel3d, dato_lineas;
+non terminal datos_pastel, datos_barras3d, datos_pastel3d, datos_lineas;
+
+/*-------------------------------GRAMATICAS-------------------------------*/
+start with programa;
+
+/*-----------------------ESTRUCTURA DE PROGRAMA---------------------------*/
+programa ::= INICIO ENTER instrucciones ENTER FIN;
+
+
+/*---------------------DEFINICION DE INSTRUCCIONES--------------------------*/
+
+instrucciones ::= GRAFICA_PASTEL PUNTO DATOS ABRIRLLA ENTER datos_pastel CERRARLLA ENTER titulo_pastel
+                | GRAFICA_BARRAS3D PUNTO DATOS ABRIRLLA ENTER datos_barras3d CERRARLLA ENTER titulo_barras3d
+                | GRAFICA_PASTEL3D PUNTO DATOS ABRIRLLA ENTER datos_pastel3d CERRARLLA ENTER titulo_pastel3d 
+                | GRAFICA_LINEAL PUNTO DATOS ABRIRLLA ENTER datos_lineas CERRARLLA ENTER titulo_lineal
+        {:
+            //instrucciones.add(new Instruccion("tipo_grafica",a.getCadena()));
+        :};
+
+/********************** GRAFICA PASTEL ********************************************/
+
+dato_pastel ::= AGREGAR ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL COMA VALINT:b CERRARPAR PCOMA ENTER
+    {:
+        try{
+            instrucciones.add(new Instruccion("pastel","agregar",a.getCadena(),Integer.parseInt(b.getCadena())));
+        }catch(Exception ex){
+            System.out.print("Error al ingresar variables en InstruccionPastel");
+        }
+    :};
+
+datos_pastel ::=datos_pastel dato_pastel| dato_pastel;
+
+titulo_pastel ::= TITULO ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL CERRARPAR PCOMA
+        
+        {:  
+             instrucciones.add(new Instruccion("pastel","titulo",a.getCadena()));
+        :};
+
+/********************** GRAFICA BARRAS3D ********************************************/
+
+dato_barras3d ::= AGREGAR ABRIRPAR VALINT:a COMA COMILLASDOBL VALSTR:b COMILLASDOBL COMA COMILLASDOBL VALSTR:c COMILLASDOBL CERRARPAR PCOMA ENTER
+    {:
+        try{
+            instrucciones.add(new Instruccion("barras3d","agregar",Integer.parseInt(a.getCadena()),b.getCadena(),c.getCadena()));
+        }catch(Exception ex){
+            System.out.print("Error al ingresar variables en InstruccionBarras3D");
+        }
+    :};
+
+datos_barras3d ::=datos_barras3d dato_barras3d| dato_barras3d;
+
+titulo_barras3d ::= TITULO ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL COMA COMILLASDOBL VALSTR:b COMILLASDOBL COMA COMILLASDOBL VALSTR:c COMILLASDOBL CERRARPAR PCOMA
+        {:  
+             instrucciones.add(new Instruccion("barras3d","titulo",a.getCadena(),b.getCadena(),c.getCadena()));
+        :};
+
+
+/********************** GRAFICA PASTEL3D ********************************************/
+
+dato_pastel3d ::= AGREGAR ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL COMA VALINT:b CERRARPAR PCOMA ENTER
+    {:
+        try{
+            instrucciones.add(new Instruccion("pastel3d","agregar",a.getCadena(),Double.parseDouble(b.getCadena())));
+        }catch(Exception ex){
+            System.out.print("Error al ingresar variables en InstruccionPastel3D");
+        }
+    :};
+
+datos_pastel3d ::=datos_pastel3d dato_pastel3d | dato_pastel3d;
+
+titulo_pastel3d ::= TITULO ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL CERRARPAR PCOMA
+        
+        {:  
+             instrucciones.add(new Instruccion("pastel3d","titulo",a.getCadena()));
+        :};
+
+/*********************** GRAFICA LINEAL ********************************************/
+
+dato_lineas ::= AGREGAR ABRIRPAR VALINT:a COMA COMILLASDOBL VALSTR:b COMILLASDOBL COMA COMILLASDOBL VALSTR:c COMILLASDOBL CERRARPAR PCOMA ENTER
+    {:
+        try{
+            instrucciones.add(new Instruccion("lineal","agregar",Integer.parseInt(a.getCadena()),b.getCadena(),c.getCadena()));
+        }catch(Exception ex){
+            System.out.print("Error al ingresar variables en InstruccionLineas");
+        }
+    :};
+
+datos_lineas ::=datos_lineas dato_lineas | dato_lineas;
+
+titulo_lineal ::= TITULO ABRIRPAR COMILLASDOBL VALSTR:a COMILLASDOBL COMA COMILLASDOBL VALSTR:b COMILLASDOBL COMA COMILLASDOBL VALSTR:c COMILLASDOBL CERRARPAR PCOMA
+        {:  
+             instrucciones.add(new Instruccion("lineal","titulo",a.getCadena(),b.getCadena(),c.getCadena()));
+        :};
